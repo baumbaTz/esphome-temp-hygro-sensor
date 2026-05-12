@@ -10,7 +10,7 @@ substitutions:
   ap_password: "SetupPassword123"
 
   # Options: AHT10, AHT20, AHT21, or AHT30
-  aht_variant: "AHT10" 
+  aht_variant: "AHT20" 
   update_interval: "60s"
   # --- USER CONFIGURATION END ---
 
