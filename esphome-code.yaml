@@ -1,0 +1,126 @@
+# ─── USER SETTINGS ──────────────────────────────────────────────────────────
+# Change these names if you have multiple sensors in different tents.
+substitutions:
+  device_name: "growbox-sensor"
+  friendly_name: "Growbox Sensor"
+  update_interval: "60s" # How often the sensor reads (once per minute)
+  aht_variant: "AHT20"
+	  # COMMON VARIANTS: 
+      # AHT10: The original version
+      # AHT20: Most common on purple combo boards (AHT20+BMP280)
+      # AHT21: Often found on white/black sensor modules
+      # AHT30: The newest, high-precision version
+
+esphome:
+  name: "${device_name}"
+  friendly_name: "${friendly_name}"
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+# Standard features to let the device talk to your network and update itself
+logger: # Logs activity so you can see what's happening via USB or WiFi
+api:    # Allows the sensor to talk to other smart home software
+ota:
+  - platform: esphome # Allows you to update the code wirelessly
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  # If WiFi drops for 15 minutes, the device restarts itself to try and reconnect
+  reboot_timeout: 15min 
+
+# ─── MAINTENANCE AUTOMATION ────────────────────────────────────────────────
+# Small computers can get "tired" over time. This reboots the sensor 
+# once every 24 hours to keep the memory fresh and the connection stable.
+interval:
+  - interval: 24h
+    then:
+      - button.press: restart_button
+
+button:
+  - platform: restart
+    name: "${friendly_name} Restart"
+    id: restart_button
+
+# ─── CALIBRATION SETTINGS ──────────────────────────────────────────────────
+# This creates a box in your dashboard where you can change the Leaf Offset.
+# Leaves are usually cooler than the air. Standard is -2.0°C.
+number:
+  - platform: template
+    name: "${friendly_name} Leaf Temp Offset"
+    id: leaf_offset
+    min_value: -10
+    max_value: 5
+    step: 0.1
+    initial_value: -2.0
+    optimistic: true
+    restore_value: true
+    unit_of_measurement: "°C"
+    mode: box
+
+# ─── HARDWARE SETUP (I2C) ──────────────────────────────────────────────────
+# This tells the ESP32 which physical pins the sensor wires are plugged into.
+i2c:
+  sda: GPIO8 # Data wire (usually Blue or Green)
+  scl: GPIO9 # Clock wire (usually Yellow or White)
+  scan: true
+  id: bus_a
+
+sensor:
+  # The AHT20 measures Air Temperature and Humidity
+  - platform: aht10
+    variant: ${aht_variant} # This pulls from the setting at the top
+    i2c_id: bus_a
+    temperature:
+      name: "${friendly_name} Temperature"
+      id: temperature_sensor
+    humidity:
+      name: "${friendly_name} Humidity"
+      id: humidity_sensor
+    update_interval: ${update_interval}
+
+  # The BMP280 measures Air Pressure
+  - platform: bmp280_i2c
+    i2c_id: bus_a
+    address: 0x76
+    pressure:
+      name: "${friendly_name} Pressure"
+      id: pressure_sensor
+    update_interval: ${update_interval}
+
+  # ─── THE VPD CALCULATION ─────────────────────────────────────────────────
+  # VPD (Vapor Pressure Deficit) tells you how "thirsty" the air is. 
+  # This uses a math formula (Tetens) to calculate it automatically.
+  - platform: template
+    name: "${friendly_name} VPD"
+    id: vpd_sensor
+    unit_of_measurement: "kPa"
+    accuracy_decimals: 2
+    icon: "mdi:water-percent"
+    update_interval: ${update_interval}
+    lambda: |-
+      if (id(temperature_sensor).has_state() && id(humidity_sensor).has_state()) {
+        float t_air  = id(temperature_sensor).state;
+        // Leaf temp is usually lower than air temp. We subtract our offset here.
+        float t_leaf = t_air + id(leaf_offset).state; 
+        float rh     = id(humidity_sensor).state / 100.0;
+        
+        // Math for Saturated Vapor Pressure
+        float svp_air  = 0.6108 * exp(17.27 * t_air  / (t_air  + 237.3));
+        float svp_leaf = 0.6108 * exp(17.27 * t_leaf / (t_leaf + 237.3));
+        
+        // The final VPD result
+        return svp_leaf - (rh * svp_air);
+      }
+      return NAN;
+
+  # Diagnostic sensors to check WiFi health and how long the device has been on
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+  - platform: uptime
+    name: "${friendly_name} Uptime"
+
