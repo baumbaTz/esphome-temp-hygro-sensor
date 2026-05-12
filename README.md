@@ -13,7 +13,7 @@ It uses an **ESP32-C3 SuperMini** and an **AHT10** or another variant of the **A
 
 ## 🛠 Step 1: The Parts
 *   **Microcontroller:** ESP32-C3 SuperMini
-*   **Sensor:** AHT10 Variant
+*   **Sensor:** AHT10 Variant, optionally additional BMP280 or AHT20/BMP280 combo
 *   **Wires:** 4 Wires to connect Microcontroller and Sensor
 
 ---
@@ -39,33 +39,61 @@ It uses an **ESP32-C3 SuperMini** and an **AHT10** or another variant of the **A
 ### ESPHome Code
 ```yaml
 substitutions:
-  device_name: "growbox-sensor"
-  friendly_name: "Growbox Sensor"
+  # Adjust these if more than one sensor is on the network
+  device_name: "growbox-sensor-01"
+  friendly_name: "Growbox Sensor 01"
+  
+  # --- USER CONFIGURATION START ---
+  # Enter your WiFi details below. 
+  # If left as-is, the device will start its own Hotspot after 1 minute.
+  wifi_ssid: "Your_WiFi_Name"
+  wifi_password: "Your_WiFi_Password"
+  
+  # Fallback Hotspot (Used for initial setup or if WiFi fails)
+  ap_ssid: "GrowSensor Setup"
+  ap_password: "SetupPassword123"
+
   # SENSOR VARIANT: Options are AHT10, AHT20, AHT21, or AHT30
   aht_variant: "AHT20" 
   update_interval: "60s"
+  # --- USER CONFIGURATION END ---
 
 esphome:
-  name: "\${device_name}"
-  friendly_name: "\${friendly_name}"
+  name: "${device_name}"
+  friendly_name: "${friendly_name}"
 
 esp32:
   board: esp32-c3-devkitm-1
   framework:
     type: esp-idf
 
+# Enables a web interface when the device is in AP mode
+captive_portal:
+
+# Basic logger to see what the device is doing
 logger:
+
+# Communication API for Home Assistant
 api:
+
+# Over-the-Air updates
 ota:
   - platform: esphome
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+  ssid: "${wifi_ssid}"
+  password: "${wifi_password}"
   fast_connect: true
+  
+  # If WiFi fails for 15 minutes, the device restarts to try again
   reboot_timeout: 15min 
+  
+  # This starts a hotspot if the device can't connect to your router
+  ap:
+    ssid: "${ap_ssid}"
+    password: "${ap_password}"
 
-# Daily maintenance reboot
+# Daily maintenance reboot to ensure long-term stability
 interval:
   - interval: 24h
     then:
@@ -73,13 +101,13 @@ interval:
 
 button:
   - platform: restart
-    name: "\${friendly_name} Restart"
+    name: "${friendly_name} Restart"
     id: restart_button
 
-# Dynamic Leaf Offset for VPD calculation
+# Dynamic Leaf Offset for VPD calculation (Adjustable via UI)
 number:
   - platform: template
-    name: "\${friendly_name} Leaf Temp Offset"
+    name: "${friendly_name} Leaf Temp Offset"
     id: leaf_offset
     min_value: -10
     max_value: 5
@@ -97,47 +125,52 @@ i2c:
   id: bus_a
 
 sensor:
+  # Humidity & Temperature Sensor
   - platform: aht10
-    variant: \${aht_variant}
+    variant: ${aht_variant}
     i2c_id: bus_a
     temperature:
-      name: "\${friendly_name} Temperature"
+      name: "${friendly_name} Temperature"
       id: temperature_sensor
     humidity:
-      name: "\${friendly_name} Humidity"
+      name: "${friendly_name} Humidity"
       id: humidity_sensor
-    update_interval: \${update_interval}
+    update_interval: ${update_interval}
 
+  # Barometric Pressure Sensor (Optional/Combo Sensors)
   - platform: bmp280_i2c
     i2c_id: bus_a
     address: 0x76
     pressure:
-      name: "\${friendly_name} Pressure"
+      name: "${friendly_name} Pressure"
       id: pressure_sensor
-    update_interval: \${update_interval}
+    update_interval: ${update_interval}
 
+  # Vapour Pressure Deficit (VPD) Calculation
   - platform: template
-    name: "\${friendly_name} VPD"
+    name: "${friendly_name} VPD"
     id: vpd_sensor
     unit_of_measurement: "kPa"
     accuracy_decimals: 2
     icon: "mdi:water-percent"
-    update_interval: \${update_interval}
+    update_interval: ${update_interval}
     lambda: |-
       if (id(temperature_sensor).has_state() && id(humidity_sensor).has_state()) {
         float t_air  = id(temperature_sensor).state;
         float t_leaf = t_air + id(leaf_offset).state; 
         float rh     = id(humidity_sensor).state / 100.0;
+        // Tetens Formula
         float svp_air  = 0.6108 * exp(17.27 * t_air  / (t_air  + 237.3));
         float svp_leaf = 0.6108 * exp(17.27 * t_leaf / (t_leaf + 237.3));
         return svp_leaf - (rh * svp_air);
       }
       return NAN;
 
+  # Diagnostic Sensors
   - platform: wifi_signal
-    name: "\${friendly_name} WiFi Signal"
+    name: "${friendly_name} WiFi Signal"
   - platform: uptime
-    name: "\${friendly_name} Uptime"
+    name: "${friendly_name} Uptime"
 ```
 
 ---
