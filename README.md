@@ -1,26 +1,24 @@
 # ESP32-C3 Growbox Sensor (VPD, Temp, Humidity, Pressure)
 
-This project provides an easy-to-build, professional-grade environmental sensor for grow tents. It uses an **ESP32-C3 SuperMini** and an **AHT20+BMP280** combo sensor to calculate **Vapour Pressure Deficit (VPD)** locally on the device.
+This project provides an easy-to-build, environmental sensor for grow tents / green houses. 
+
+It uses an **ESP32-C3 SuperMini** and an **AHT10** or another variant of the **AHT10** (like **AHT20**, **AHT30**, **AHT20+BMP280 combo sensor** etc.) to calculate **Vapour Pressure Deficit (VPD)** locally on the device.
 
 ## Features
 - **Real-time VPD Calculation:** Uses the Tetens formula with an adjustable leaf temperature offset.
-- **Dynamic Configuration:** Change your sensor variant and leaf offset directly in the code or UI without full reflashes.
+- **Dynamic Configuration:** Change your sensor variant in the code and leaf offset directly in the code or via the UI without full reflashes.
 - **Stability:** Includes a 24-hour auto-reboot and a 15-minute WiFi watchdog to ensure 24/7 uptime.
-- **Noob-Friendly:** Highly commented code and simple "plug-and-play" wiring.
 
 ---
 
-## 🛠 Step 1: Identifying the Parts
-*   **The Brain:** [ESP32-C3 SuperMini](https://google.com) (It's about the size of a postage stamp).
-*   **The Eye:** [AHT20 + BMP280 combo sensor](https://google.com) (Usually a small purple or blue board).
-*   **The Wires:** 4 Jumper wires (Female-to-Female) or a soldering iron.
+## 🛠 Step 1: The Parts
+*   **Microcontroller:** ESP32-C3 SuperMini
+*   **Sensor:** AHT10 Variant
+*   **Wires:** 4 Wires to connect Microcontroller and Sensor
 
 ---
 
-## 🔌 Step 2: Wiring (The "Plug and Play" Method)
-You don't need to solder if you use jumper wires, but soldering is more reliable for long-term use in humid grow tents. Match the labels on the sensor to the pins on the ESP32-C3:
-
-
+## 🔌 Step 2: Wiring
 | Sensor Pin | ESP32-C3 Pin | Function |
 | :--- | :--- | :--- |
 | **VCC** | **3V3** | 3.3V Power |
@@ -147,7 +145,7 @@ sensor:
 ## 📍 Step 4: Positioning & Pro-Tips
 *   **Avoid the "Hot Box":** Don't mount the sensor directly on top of the ESP32 chip. The chip's heat will bleed into the sensor and ruin your readings. Give it 2-5 inches of space.
 *   **Airflow:** Hang the sensor at canopy height (where the plant leaves are). Keep it away from direct light if possible, as LEDs can heat the sensor's casing.
-*   **Pro Tip (VPD Tuning):** If you notice your VPD looks "wrong," check your **Leaf Temp Offset** in your dashboard. 
+*   **VPD Tuning:** If you notice your VPD looks "wrong," check your **Leaf Temp Offset** in your dashboard. 
     *   **Intense LED Lighting:** Leaves might be same as air (Offset 0).
     *   **High Airflow/Low Light:** Leaves might be much cooler (Offset -3).
 
