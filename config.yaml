@@ -4,8 +4,8 @@ substitutions:
   device_name: "growbox-sensor-01"
   friendly_name: "Growbox Sensor 01"
 
-  # Put in WIFI Credentials for your network here. If you don't add it here, 
-  # you can connect to the WIFI AP (see block below) and set up your WIFI 
+  # Put in WIFI Credentials for your network here. If you don't add it here,
+  # you can connect to the WIFI AP (see block below) and set up your WIFI
   # that way, if needed.
   wifi_ssid: "Your_WiFi_Name"
   wifi_password: "Your_WiFi_Password"
@@ -44,12 +44,15 @@ wifi:
   ssid: "${wifi_ssid}"
   password: "${wifi_password}"
 
+  # reboot_timeout: how long to keep trying WiFi before rebooting (default: 15min).
+  reboot_timeout: 15min
+
   ap:
     ssid: "${ap_ssid}"
     password: "${ap_password}"
-    # ap_timeout: how long the fallback AP stays up before rebooting and retrying.
-    # 0s = stay in AP mode indefinitely (recommended for setup-friendly devices).
-    ap_timeout: 0s
+    # ap_timeout: how long to wait with no WiFi before starting the fallback AP.
+    # Default is 90s. IMPORTANT: 0s disables automatic AP startup entirely, do not use 0s.
+    ap_timeout: 60s
 
 # 24h auto-restart keeps memory clean on long-running sensor nodes
 interval:
@@ -101,11 +104,12 @@ sensor:
     update_interval: ${update_interval}
 
   # --- BMP280 air pressure (optional — only for combo AHT+BMP boards) ---
+  # ESPHome has no conditional block support, so there is no substitution toggle for this.
   # If your board HAS a BMP280: uncomment all lines below.
   # If your board does NOT have a BMP280: leave this commented out (a missing sensor
   # declared in YAML will cause a hard boot error).
   # Common I2C addresses: 0x76 (default) or 0x77
-  
+
   # - platform: bmp280_i2c
   #   i2c_id: bus_a
   #   address: 0x76
