@@ -34,7 +34,7 @@ This project provides an easy-to-build, environmental sensor for grow tents and 
 2.  Open [web.esphome.io](https://esphome.io) in Chrome or Edge.
 3.  Click **Connect**, select your ESP32, and click **Install** for the base firmware.
 4.  In your ESPHome dashboard, create a new device and paste the code below.
-5.  Update the `wifi_ssid` and `wifi_password` in the `substitutions` section.
+5.  Update the `wifi_ssid` and `wifi_password` in the `substitutions` section. If you don't the ESP32-C3 will start a Fallback AP to connect to, where you can connect to your WIFI.
 6.  Click **Install** > **Wirelessly**.
 
 ### ESPHome Code
