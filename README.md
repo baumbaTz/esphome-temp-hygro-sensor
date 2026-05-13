@@ -1,6 +1,6 @@
 # ESP32-C3 Growbox Sensor (Temp, Humidity, VPD, Pressure)
 
-This project provides an easy-to-build environmental sensor for grow tents and greenhouses or whatever usage you have for it.
+This project provides an easy-to-build environmental sensor for grow tents and greenhouses or whatever use you have for it.
 
 It uses an **ESP32-C3 SuperMini** and an **AHT10** variant (AHT10, AHT20, AHT30, or AHT20+BMP280 combo) to calculate **Vapour Pressure Deficit (VPD)** locally on the device.
 
