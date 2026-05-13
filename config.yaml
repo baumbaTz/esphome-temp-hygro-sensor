@@ -105,6 +105,7 @@ sensor:
   # If your board does NOT have a BMP280: leave this commented out (a missing sensor
   # declared in YAML will cause a hard boot error).
   # Common I2C addresses: 0x76 (default) or 0x77
+  
   # - platform: bmp280_i2c
   #   i2c_id: bus_a
   #   address: 0x76
