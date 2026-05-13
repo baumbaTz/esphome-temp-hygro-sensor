@@ -84,13 +84,34 @@ If it is not discovered automatically, click **+ Add Integration**, search for *
 
 ---
 
-## 📍 Step 6: Positioning & Tips
+## 📍 Step 6: Positioning & Pro-Tips
 
 - **Heat Management:** Keep the sensor 2–5 inches away from the ESP32 chip. The microcontroller generates heat that will skew your humidity and VPD readings if they are too close.
 - **Placement:** Hang the sensor at canopy height, out of direct LED light to prevent the casing from heating up.
 - **VPD Tuning:** Adjust the **Leaf Temp Offset** in your Home Assistant dashboard or the web UI based on your lighting:
   - **LEDs:** Leaves are often cooler than air (offset −2.0 to 0).
   - **HPS:** Leaves can be warmer than air (offset +1.0 to +3.0).
+
+---
+
+## 🔒 Optional: Adding Security
+
+This config ships without an API encryption key or OTA password, which is fine for a sensor on a trusted home network. If you want to lock it down — for example if your network has many users or you just prefer it — you can add both in a few lines.
+
+In your `config.yaml`, update the `api:` and `ota:` blocks:
+
+```yaml
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: "<your key here>"
+
+ota:
+  - platform: esphome
+    password: "<your password here>"
+```
+
+To generate an API encryption key: open your ESPHome dashboard, click **Edit** on any device, and ESPHome can generate one for you — or use any base64-encoded 32-byte string. After saving and reflashing, Home Assistant will ask you to re-add the device and enter the key once.
 
 ---
 
