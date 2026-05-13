@@ -1,16 +1,23 @@
 substitutions:
+  # --- USER CONFIGURATION START ---
+  # Change these in case you use more than one, or if you want another name
   device_name: "growbox-sensor-01"
   friendly_name: "Growbox Sensor 01"
-  
-  # --- USER CONFIGURATION START ---
+
+  # Put in WIFI Credentials for your network here. If you don't add it here, 
+  # you can connect to the WIFI AP (see block below) and set up your WIFI 
+  # that way, if needed.
   wifi_ssid: "Your_WiFi_Name"
   wifi_password: "Your_WiFi_Password"
-  
+
   ap_ssid: "GrowSensor Setup"
   ap_password: "SetupPassword123"
 
-  # Options: AHT10, AHT20, AHT21, or AHT30
-  aht_variant: "AHT20" 
+  # Sensor variant — options: AHT10, AHT20, AHT21, AHT30
+  # AHT20 works correctly for all variants in practice. Only change this if
+  # your readings look wrong or the sensor fails to initialize.
+  aht_variant: "AHT20"
+
   update_interval: "60s"
   # --- USER CONFIGURATION END ---
 
@@ -23,21 +30,28 @@ esp32:
   framework:
     type: esp-idf
 
+# Enables captive portal redirect when in fallback AP mode
 captive_portal:
+
 logger:
+
 api:
+
 ota:
   - platform: esphome
 
 wifi:
   ssid: "${wifi_ssid}"
   password: "${wifi_password}"
-  fast_connect: true
-  reboot_timeout: 15min 
+
   ap:
     ssid: "${ap_ssid}"
     password: "${ap_password}"
+    # ap_timeout: how long the fallback AP stays up before rebooting and retrying.
+    # 0s = stay in AP mode indefinitely (recommended for setup-friendly devices).
+    ap_timeout: 0s
 
+# 24h auto-restart keeps memory clean on long-running sensor nodes
 interval:
   - interval: 24h
     then:
@@ -59,15 +73,22 @@ number:
     optimistic: true
     restore_value: true
     unit_of_measurement: "°C"
+    icon: "mdi:thermometer-minus"
     mode: box
 
 i2c:
   sda: GPIO8
   scl: GPIO9
+  # scan: true logs found I2C addresses on boot — helpful for debugging and
+  # costs nothing on a sensor node. Fine to leave on permanently.
   scan: true
   id: bus_a
 
 sensor:
+  # --- AHT temperature + humidity ---
+  # variant supports: AHT10, AHT20, AHT21, AHT30
+  # AHT20 works for all variants in practice — only change if readings are wrong.
+  # AHT10 uses the legacy aht10 platform; AHT20/21/30 also use this platform in ESPHome.
   - platform: aht10
     variant: ${aht_variant}
     i2c_id: bus_a
@@ -79,15 +100,23 @@ sensor:
       id: humidity_sensor
     update_interval: ${update_interval}
 
-  # This section is for combo sensors. If not using BMP280, you can delete this.
-  - platform: bmp280_i2c
-    i2c_id: bus_a
-    address: 0x76
-    pressure:
-      name: "${friendly_name} Pressure"
-      id: pressure_sensor
-    update_interval: ${update_interval}
+  # --- BMP280 air pressure (optional — only for combo AHT+BMP boards) ---
+  # If your board HAS a BMP280: uncomment all lines below.
+  # If your board does NOT have a BMP280: leave this commented out (a missing sensor
+  # declared in YAML will cause a hard boot error).
+  # Common I2C addresses: 0x76 (default) or 0x77
+  # - platform: bmp280_i2c
+  #   i2c_id: bus_a
+  #   address: 0x76
+  #   pressure:
+  #     name: "${friendly_name} Pressure"
+  #     id: pressure_sensor
+  #   update_interval: ${update_interval}
 
+  # --- VPD (Vapour Pressure Deficit) ---
+  # Uses Tetens formula with a leaf temperature offset (leaf runs cooler than air).
+  # Leaf offset is configurable in Home Assistant via the number entity above.
+  # Initial value: -2.0°C (standard cannabis grow assumption).
   - platform: template
     name: "${friendly_name} VPD"
     id: vpd_sensor
@@ -98,16 +127,20 @@ sensor:
     lambda: |-
       if (id(temperature_sensor).has_state() && id(humidity_sensor).has_state()) {
         float t_air  = id(temperature_sensor).state;
-        float t_leaf = t_air + id(leaf_offset).state; 
+        float t_leaf = t_air + id(leaf_offset).state;  // offset is stored as negative, e.g. -2.0
         float rh     = id(humidity_sensor).state / 100.0;
-        // Tetens Formula
+        // Tetens formula — returns kPa
         float svp_air  = 0.6108 * exp(17.27 * t_air  / (t_air  + 237.3));
         float svp_leaf = 0.6108 * exp(17.27 * t_leaf / (t_leaf + 237.3));
         return svp_leaf - (rh * svp_air);
       }
       return NAN;
 
+  # --- Diagnostics ---
   - platform: wifi_signal
     name: "${friendly_name} WiFi Signal"
+    update_interval: 60s
+
   - platform: uptime
     name: "${friendly_name} Uptime"
+    update_interval: 60s
