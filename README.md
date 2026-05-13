@@ -14,6 +14,7 @@ This project provides an easy-to-build environmental sensor for grow tents and g
 - **Microcontroller:** ESP32-C3 SuperMini
 - **Sensor:** AHT10/20/30 (optionally with BMP280 for air pressure)
 - **Wires:** 4 wires
+- **Enclosure:** some kind of enclosure. which lets air flow over and ideally has a separate compartment for the sensor. :)
 
 ---
 
